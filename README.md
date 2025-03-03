@@ -6,7 +6,7 @@ simple go queue - sgoq
 ### To start the visualization of the queue:
 ```go run .```
 
-![screen-record](https://github.com/clarkreiz/sgoq/blob/main/screen.gif)
+![screen-record](https://github.com/clarkreiz/sgoq/blob/main/screen2.gif)
 
 Core requirements:
 
