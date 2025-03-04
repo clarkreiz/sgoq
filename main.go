@@ -28,6 +28,7 @@ func init() {
 
 func main() {
 	log.Println("Start....")
+	// TODO: Create a supervisor for workers that can manage concurrency.
 	concurrency := 70
 	qbuff := 1000
 	var wg sync.WaitGroup

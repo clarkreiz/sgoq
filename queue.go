@@ -17,6 +17,8 @@ type Task struct {
 	executed  bool
 }
 
+const cpuSmoko = time.Millisecond * 100
+
 // Priority queue with 5 queues and an additional priority level.
 // Workers pull tasks from the queues, starting with the critical priority.
 // In this case, we can use atomic because there are simple inc/dec
@@ -66,7 +68,7 @@ func (pq *PriorityQueue) Enqueue(task *Task) error {
 		// imagine that we backup our task and incremt the metric here,
 		// We will attach an alert to our metric
 		// that will be triggered to avoid disk or memory overflow. So goood...
-		time.Sleep(time.Millisecond * 100)
+		time.Sleep(cpuSmoko)
 		return fmt.Errorf("Queue is full for priority %d", task.Priority)
 	}
 }
@@ -84,7 +86,7 @@ func (pq *PriorityQueue) Dequeue() *Task {
 			return task
 		default:
 			// Try next priority level
-			time.Sleep(time.Microsecond * 100)
+			time.Sleep(cpuSmoko)
 		}
 	}
 	return nil

@@ -73,7 +73,7 @@ func (w *Worker) StartProcessing(wg *sync.WaitGroup) {
 							return
 						}
 						// Otherwise wait a bit and try again
-						time.Sleep(time.Millisecond * 100)
+						time.Sleep(cpuSmoko)
 					}
 				}
 			}
