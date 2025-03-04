@@ -14,7 +14,7 @@ type Task struct {
 	Payload   any
 	CreatedAt time.Time
 	Exe       func()
-	executed  bool
+	executed  atomic.Bool // for test
 }
 
 const cpuSmoko = time.Millisecond * 100
@@ -22,13 +22,13 @@ const cpuSmoko = time.Millisecond * 100
 // Priority queue with 5 queues and an additional priority level.
 // Workers pull tasks from the queues, starting with the critical priority.
 // In this case, we can use atomic because there are simple inc/dec
-// no nested operations,
-// but in real life, it is better to use a mutex.
+// no nested operations, just chanel and atomic
 type PriorityQueue struct {
 	queues      [numPriorities]chan *Task
 	taskByPrior [numPriorities]atomic.Int32
 	totalTask   atomic.Int32
 	stopped     atomic.Bool
+	capacity    int
 }
 
 func (pq *PriorityQueue) IsEmpty() bool {
@@ -82,6 +82,7 @@ func (pq *PriorityQueue) Dequeue() *Task {
 			if !ok {
 				continue
 			}
+			pq.totalTask.Add(-1)
 			pq.taskByPrior[i].Add(-1)
 			return task
 		default:
@@ -92,8 +93,16 @@ func (pq *PriorityQueue) Dequeue() *Task {
 	return nil
 }
 
+func (pq *PriorityQueue) GetCapacity() int {
+	return pq.capacity
+}
+
+func (pq *PriorityQueue) GetTotalTasks() int {
+	return int(pq.totalTask.Load())
+}
+
 func NewPriorityQueue(size int) *PriorityQueue {
-	pq := &PriorityQueue{}
+	pq := &PriorityQueue{capacity: size}
 
 	for i := critical; i < len(pq.queues); i++ {
 		pq.queues[i] = make(chan *Task, size/numPriorities)

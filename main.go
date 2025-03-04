@@ -1,11 +1,11 @@
 package main
 
 import (
+	"context"
 	"log"
 	"math/rand"
 	"os"
 	"os/signal"
-	"sync"
 	"syscall"
 	"time"
 )
@@ -16,9 +16,16 @@ const (
 	high
 	medium
 	low
-	min
+	minimal
 
 	numPriorities
+)
+
+const (
+	qbuff          = 1000
+	initialWorkers = 5
+	minWorkers     = 1
+	maxWorkers     = 100
 )
 
 func init() {
@@ -28,43 +35,65 @@ func init() {
 
 func main() {
 	log.Println("Start....")
-	// TODO: Create a supervisor for workers that can manage concurrency.
-	concurrency := 70
-	qbuff := 1000
-	var wg sync.WaitGroup
 
 	pq := NewPriorityQueue(qbuff)
-	worker := NewWorker(pq, concurrency)
+	pool := NewWorkerPool(pq, initialWorkers)
+	supervisor := NewSupervisor(pool, pq, minWorkers, maxWorkers)
 
-	// Set up signal handling
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+	supervisor.Start()
 
-	// Simulate infinit task addition
+	go report(pq, pool)
+	// Simulate infinite task addition
 	go func() {
 		for {
 			for i := 0; i < 1000; i++ {
 				err := pq.Enqueue(makeTask())
 				if err != nil {
-					// if queue is full, wait second
+					// if queue is full, wait
 					time.Sleep(time.Second)
 				}
-				time.Sleep(time.Microsecond * 50)
 			}
 		}
 	}()
-
-	go printCountOfTask(pq)
-
-	worker.StartProcessing(&wg)
+	// Set up signal handling
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 
 	sig := <-sigChan
 	log.Printf("\nReceived signal: %v\n", sig)
 
-	worker.Shutdown(&wg, 30*time.Second)
+	Shutdown(pq, pool, supervisor)
 }
 
-func printCountOfTask(pq *PriorityQueue) {
+func Shutdown(pq *PriorityQueue, pool *WorkerPool, supervisor *Supervisor) {
+	log.Println("Initiating graceful shutdown...")
+
+	pq.Stop()
+	log.Println("Stopped accepting new tasks")
+
+	supervisor.Stop()
+
+	// Create shutdown context with timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	// Start shutdown in goroutine
+	done := make(chan struct{})
+	go func() {
+		pool.Shutdown()
+		close(done)
+	}()
+
+	// Wait for shutdown or timeout
+	select {
+	case <-done:
+		log.Println("Shutdown complete")
+	case <-ctx.Done():
+		log.Println("Shutdown timed out after 30 seconds")
+	}
+}
+
+func report(pq *PriorityQueue, pool *WorkerPool) {
 	priorityNames := []string{
 		"CRITICAL",
 		"HIGH",
@@ -76,6 +105,10 @@ func printCountOfTask(pq *PriorityQueue) {
 	for {
 		log.Print("\033[H\033[2J")
 
+		log.Println("SYSTEM STATUS")
+		log.Println("-------------")
+		log.Printf("Active Workers: %d\n", pool.Current())
+		log.Println()
 		log.Println("PRIORITY   TASKS COUNT")
 		log.Println("---------------------")
 
