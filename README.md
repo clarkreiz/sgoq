@@ -1,7 +1,7 @@
 # sgoq
 simple go queue - sgoq
 
-# Simple asynchronous task queue
+## Simple asynchronous task queue
 
 ### To start the visualization of the queue:
 ```go run .```
