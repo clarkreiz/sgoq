@@ -6,8 +6,6 @@ simple go queue - sgoq
 ### To start:
 ```go run .```
 
-![screen-record](https://github.com/clarkreiz/sgoq/blob/main/scr.gif)
-
 # Description:
 
 The core of the system consists of four main components:
@@ -19,3 +17,5 @@ The core of the system consists of four main components:
 - WorkerPool – A tool for managing workers, it can increase or decrease the number of workers by a delta. It knows about the queue no more than the worker.
 
 - Supervisor – the overseer of everything, who knows how many tasks are currently being worked on in the queue and can manage the number of workers via the WorkerPool. It contains mysterious logic for managing workers based on thresholds.
+
+![screen-record](https://github.com/clarkreiz/sgoq/blob/main/scr.gif)
