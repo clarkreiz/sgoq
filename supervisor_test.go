@@ -6,26 +6,23 @@ import (
 	"time"
 )
 
-// Mock implementations
 type MockWorkerManager struct {
 	mu          sync.RWMutex
 	concurrency int
 	t           *testing.T
 }
 
-func (m *MockWorkerManager) GetConcurrency() int {
+func (m *MockWorkerManager) Scale(delta int) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.concurrency += delta
+}
+
+func (m *MockWorkerManager) Current() int {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 	return m.concurrency
 }
-
-func (m *MockWorkerManager) SetConcurrency(workers int) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	m.concurrency = workers
-}
-
-func (m *MockWorkerManager) StartProcessing(wg *sync.WaitGroup) {}
 
 type MockQueueManager struct {
 	capacity   int
@@ -102,16 +99,12 @@ func TestSupervisor(t *testing.T) {
 
 			supervisor := NewSupervisor(worker, queue, tt.minWorkers, tt.maxWorkers)
 
-			var wg sync.WaitGroup
-			supervisor.Start(&wg)
-
+			supervisor.Start()
 			time.Sleep(2 * time.Second)
-
 			supervisor.Stop()
-			wg.Wait()
 
-			if worker.GetConcurrency() != tt.expectedWorkers {
-				t.Errorf("Expected %d workers, got %d", tt.expectedWorkers, worker.GetConcurrency())
+			if worker.Current() != tt.expectedWorkers {
+				t.Errorf("Expected %d workers, got %d", tt.expectedWorkers, worker.Current())
 			}
 		})
 	}
@@ -124,12 +117,13 @@ func TestSupervisorEdgeCases(t *testing.T) {
 
 		supervisor := NewSupervisor(worker, queue, 1, 10)
 
-		var wg sync.WaitGroup
-		supervisor.Start(&wg)
+		supervisor.Start()
 		time.Sleep(2 * time.Second)
 		supervisor.Stop()
-		wg.Wait()
 
+		if worker.Current() != 5 {
+			t.Errorf("Expected workers to remain at 5, got %d", worker.Current())
+		}
 	})
 
 	t.Run("Equal min and max workers", func(t *testing.T) {
@@ -138,14 +132,12 @@ func TestSupervisorEdgeCases(t *testing.T) {
 
 		supervisor := NewSupervisor(worker, queue, 5, 5)
 
-		var wg sync.WaitGroup
-		supervisor.Start(&wg)
+		supervisor.Start()
 		time.Sleep(2 * time.Second)
 		supervisor.Stop()
-		wg.Wait()
 
-		if worker.GetConcurrency() != 5 {
-			t.Errorf("Expected workers to remain at 5, got %d", worker.GetConcurrency())
+		if worker.Current() != 5 {
+			t.Errorf("Expected workers to remain at 5, got %d", worker.Current())
 		}
 	})
 }

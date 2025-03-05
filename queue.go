@@ -14,15 +14,22 @@ type Task struct {
 	Payload   any
 	CreatedAt time.Time
 	Exe       func()
-	executed  atomic.Bool // for test
 }
 
 const cpuSmoko = time.Millisecond * 100
 
+func NewPriorityQueue(size int) *PriorityQueue {
+	pq := &PriorityQueue{capacity: size}
+
+	for i := critical; i < len(pq.queues); i++ {
+		pq.queues[i] = make(chan *Task, size/numPriorities)
+	}
+
+	return pq
+}
+
 // Priority queue with 5 queues and an additional priority level.
 // Workers pull tasks from the queues, starting with the critical priority.
-// In this case, we can use atomic because there are simple inc/dec
-// no nested operations, just chanel and atomic
 type PriorityQueue struct {
 	queues      [numPriorities]chan *Task
 	taskByPrior [numPriorities]atomic.Int32
@@ -99,14 +106,4 @@ func (pq *PriorityQueue) GetCapacity() int {
 
 func (pq *PriorityQueue) GetTotalTasks() int {
 	return int(pq.totalTask.Load())
-}
-
-func NewPriorityQueue(size int) *PriorityQueue {
-	pq := &PriorityQueue{capacity: size}
-
-	for i := critical; i < len(pq.queues); i++ {
-		pq.queues[i] = make(chan *Task, size/numPriorities)
-	}
-
-	return pq
 }

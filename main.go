@@ -41,31 +41,33 @@ func main() {
 	supervisor := NewSupervisor(pool, pq, minWorkers, maxWorkers)
 
 	supervisor.Start()
-
+	
+	// To get classic log output, simply comment out the line below.
 	go report(pq, pool)
+
 	// Simulate infinite task addition
 	go func() {
 		for {
 			for i := 0; i < 1000; i++ {
 				err := pq.Enqueue(makeTask())
 				if err != nil {
-					// if queue is full, wait
+					// if queue is full, wait a bit
 					time.Sleep(time.Second)
 				}
 			}
 		}
 	}()
-	// Set up signal handling
+
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 
 	sig := <-sigChan
 	log.Printf("\nReceived signal: %v\n", sig)
 
-	Shutdown(pq, pool, supervisor)
+	shutdown(pq, pool, supervisor)
 }
 
-func Shutdown(pq *PriorityQueue, pool *WorkerPool, supervisor *Supervisor) {
+func shutdown(pq *PriorityQueue, pool *WorkerPool, supervisor *Supervisor) {
 	log.Println("Initiating graceful shutdown...")
 
 	pq.Stop()
@@ -73,7 +75,6 @@ func Shutdown(pq *PriorityQueue, pool *WorkerPool, supervisor *Supervisor) {
 
 	supervisor.Stop()
 
-	// Create shutdown context with timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
@@ -84,7 +85,6 @@ func Shutdown(pq *PriorityQueue, pool *WorkerPool, supervisor *Supervisor) {
 		close(done)
 	}()
 
-	// Wait for shutdown or timeout
 	select {
 	case <-done:
 		log.Println("Shutdown complete")

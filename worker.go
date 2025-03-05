@@ -41,6 +41,8 @@ func (w *Worker) Start() {
 			} else if w.queue.IsStopped() {
 				return
 			}
+			// I haven't figured out what to do if the task hasn't arrived yet, 
+			// the worker will probably be sad
 		}
 	}
 }

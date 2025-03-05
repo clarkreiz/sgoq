@@ -44,7 +44,6 @@ func (p *WorkerPool) Scale(delta int) {
 			p.wg.Add(1)
 			go func(id int, stopChan chan struct{}) {
 				defer p.wg.Done()
-				// TODO: сделать лучше
 				worker := NewWorker(p.ctx, id, p.queue, stopChan)
 				worker.Start()
 			}(i, stopChan)
