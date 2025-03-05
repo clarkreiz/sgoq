@@ -5,6 +5,7 @@ simple go queue - sgoq
 
 ### To start:
 ```go run .```
+
 ![screen-record](https://github.com/clarkreiz/sgoq/blob/main/scr.gif)
 
 # Description:
