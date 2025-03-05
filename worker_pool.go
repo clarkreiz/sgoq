@@ -27,6 +27,7 @@ func NewWorkerPool(queue Queue, initialWorkers int) *WorkerPool {
 	return pool
 }
 
+// WorkerPool knows about current workers and can Scale it
 func (p *WorkerPool) Scale(delta int) {
 	p.mu.Lock()
 	defer p.mu.Unlock()

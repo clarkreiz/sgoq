@@ -67,6 +67,7 @@ func (s *Supervisor) monitor() {
 	}
 }
 
+// Working with thresholds is never easy, but I wrote a test and everything seems to work correctly.
 func (s *Supervisor) adjustWorkers() {
 	// TODO: recover from panic may be here
 	s.mu.Lock()
