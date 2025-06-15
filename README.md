@@ -1,7 +1,7 @@
 # sgoq
 simple go queue - sgoq
 
-purely educational
+purely educational 🤓
 
 ## Simple asynchronous task queue
 
