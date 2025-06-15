@@ -1,5 +1,6 @@
 # sgoq
 simple go queue - sgoq
+
 purely educational
 
 ## Simple asynchronous task queue
